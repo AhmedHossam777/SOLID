@@ -1,7 +1,7 @@
 import { Book } from './Book';
 import { PrintManager } from './PrintManager';
-import { PaymentManager } from './PaymentManagement';
-import { PersistInvoice } from './PersistInvoice';
+import { PaymentManager } from './PaymentManager';
+import { PersistInvoice } from './PersistenceManager';
 
 export class Invoice {
 	constructor(
