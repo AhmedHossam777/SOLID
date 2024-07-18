@@ -1,149 +1,109 @@
-=> Class should only have one reason to change
-=> that means that a class should only do one task we don not want multitasking
+> A class should have only one reason to change, meaning it should have only one job or responsibility. This principle helps in making the code more robust, easier to maintain, and more understandable.
 
-if we a have a book class
+### Example Scenario
 
-```ts
-export class Book {
-	constructor(
-		public name: string,
-		public authorName: string,
-		public year: number,
-		public price: number,
-		public isbn: string
-	) {}
+Let's consider a scenario where we have a class that manages user accounts in a system. The class handles user data and also handles the formatting and printing of user information.
+
+### Without SRP (Violation)
+
+Here’s an example where the SRP is violated:
+
+```typescript
+class User {
+  constructor(public name: string, public email: string) {}
+
+  saveToDatabase(): void {
+    // Code to save user data to the database
+    console.log(`Saving user ${this.name} to the database.`);
+  }
+
+  formatUserDetails(): string {
+    // Code to format user details
+    return `Name: ${this.name}, Email: ${this.email}`;
+  }
+
+  printUserDetails(): void {
+    // Code to print user details
+    console.log(this.formatUserDetails());
+  }
 }
+
+const user = new User("Alice", "alice@example.com");
+user.saveToDatabase();
+user.printUserDetails();
 ```
 
-and have a Invoice class that is responsible for Invoice Logic:
+### Why This is a Violation of SRP
 
-```ts
-import { Book } from './Book';
+1. **Multiple Responsibilities**: The `User` class has multiple responsibilities:
+   - Managing user data
+   - Saving user data to the database
+   - Formatting user details
+   - Printing user details
+   
+2. **Reasons to Change**: The class has more than one reason to change:
+   - Changes to user data management
+   - Changes to database saving logic
+   - Changes to formatting user details
+   - Changes to printing user details
+   
+This makes the class harder to maintain and extend. Any change in one responsibility could impact others, leading to potential bugs.
 
-class Invoice {
-	constructor(
-		private book: Book,
-		private quantity: number,
-		private discountRate: number,
-		private taxRate: number,
-		private total: number
-	) {}
+### Applying SRP
 
-	calculateTotal(): number {
-		const price: number =
-			(this.book.price - this.book.price * this.discountRate) * this.quantity;
+To adhere to the SRP, we should split the responsibilities into separate classes:
 
-		const priceWithTaxes: number = price * (1 + this.taxRate);
-
-		return priceWithTaxes;
-	}
-
-	printInvoice(): void {
-		console.log(`${this.quantity} x ${this.book.name} ${this.book.price} $`);
-		console.log(`Discount Rate: ${this.discountRate}`);
-		console.log(`Tax Rate: ${this.taxRate}`);
-		console.log(`Total: ${this.total}`);
-	}
-
-	saveToFile(filename: string): void {
-		// Creates a file with given name and writes the invoice
-	}
+```typescript
+class User {
+  constructor(public name: string, public email: string) {}
 }
+
+class UserRepository {
+  saveToDatabase(user: User): void {
+    // Code to save user data to the database
+    console.log(`Saving user ${user.name} to the database.`);
+  }
+}
+
+class UserFormatter {
+  formatUserDetails(user: User): string {
+    // Code to format user details
+    return `Name: ${user.name}, Email: ${user.email}`;
+  }
+}
+
+class UserPrinter {
+  printUserDetails(details: string): void {
+    // Code to print user details
+    console.log(details);
+  }
+}
+
+const user = new User("Alice", "alice@example.com");
+const userRepository = new UserRepository();
+const userFormatter = new UserFormatter();
+const userPrinter = new UserPrinter();
+
+userRepository.saveToDatabase(user);
+const userDetails = userFormatter.formatUserDetails(user);
+userPrinter.printUserDetails(userDetails);
 ```
 
-=> As you see the invoice class is doing a lot of tasks to implement the singe responsible principle we will make a class that will be responsible for implementing the logic for each one service
+### Explanation
 
-to solve that we will new classes that's responsible of each functionality
-What we will create:
+1. **Class `User`**: This class now only holds user data. It has a single responsibility: representing user information.
 
-- Book -> Already exist
-- Invoice Manager
-- PaymentManager -> responsible of the payment functionality
-- PersistenceManager -> responsible of the persistence functionality
-- PrintManager -> responsible of the print functionality
+2. **Class `UserRepository`**: This class is responsible for saving user data to the database. It has a single responsibility: managing data storage for users.
 
-=> PaymentManager :
+3. **Class `UserFormatter`**: This class handles the formatting of user details. It has a single responsibility: formatting user information.
 
-```ts
-import { Invoice } from './InvoiceManager';
+4. **Class `UserPrinter`**: This class is responsible for printing user details. It has a single responsibility: handling the printing of information.
 
-export class PaymentManager {
-	constructor(private invoice: Invoice) {}
+### Benefits of SRP
 
-	calculateTotal(): number {
-		const price: number =
-			(this.invoice.book.price -
-				this.invoice.book.price * this.invoice.discountRate) *
-			this.invoice.quantity;
+1. **Ease of Maintenance**: Each class has a single responsibility, making it easier to understand, maintain, and extend.
+2. **Reduced Risk of Bugs**: Changes in one responsibility do not affect other responsibilities, reducing the risk of introducing bugs.
+3. **Reusability**: Classes with a single responsibility are more reusable in different contexts.
+4. **Testability**: Smaller classes with focused responsibilities are easier to test.
 
-		const total: number = price * (1 + this.invoice.taxRate);
-
-		return total;
-	}
-}
-```
-
-=> PrintManager.ts
-
-```ts
-import { Invoice } from './InvoiceManager';
-
-export class PrintManager {
-	constructor(private invoice: Invoice) {}
-
-	print() {
-		console.log(
-			`${this.invoice.quantity} x ${this.invoice.book.name} ${this.invoice.book.price} $`
-		);
-		console.log(`Discount Rate: ${this.invoice.discountRate}`);
-		console.log(`Tax Rate: ${this.invoice.taxRate}`);
-		console.log(`Total: ${this.invoice.total}`);
-	}
-}
-```
-
-=> PersistenceManager.ts
-
-```ts
-export class PersistInvoice {
-	saveToFile(filename: string): void {
-		// Creates a file with given name and writes the invoice
-	}
-}
-```
-
-=> then the invoice class will use all of them :
-InvoiceManager.ts:
-
-```ts
-import { Book } from './Book';
-import { PrintManager } from './PrintManager';
-import { PaymentManager } from './PaymentManager';
-import { PersistInvoice } from './PersistenceManager';
-
-export class Invoice {
-	constructor(
-		public book: Book,
-		public quantity: number,
-		public discountRate: number,
-		public taxRate: number,
-		public total: number,
-		public printManager: PrintManager,
-		public paymentManager: PaymentManager,
-		public persistInvoice: PersistInvoice
-	) {}
-
-	getTotal(): number {
-		return this.paymentManager.calculateTotal();
-	}
-
-	printInvoice(): void {
-		this.printManager.print();
-	}
-
-	saveToFile(filename: string): void {
-		// Creates a file with given name and writes the invoice
-		this.persistInvoice.saveToFile(filename);
-	}
-}
-```
+By applying the SRP, we create a more modular, maintainable, and understandable codebase.
