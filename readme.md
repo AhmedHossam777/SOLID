@@ -40,7 +40,7 @@ Each principle is demonstrated in a separate TypeScript file within this reposit
 
 ```bash
 git clone https://github.com/AhmedHossam777/SOLID
-cd solid-principles-typescript
+cd SOLID
 ```
 
 ## Contributing
